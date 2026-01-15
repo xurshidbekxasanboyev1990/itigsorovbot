@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Environment
+.env
+venv/
+env/
+.venv/
+
+# Logs
+logs/*.log
+
+# Database (serverda yangi yaratiladi)
+# data/survey.db
+
+# Exports
+data/exports/*.xlsx
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
