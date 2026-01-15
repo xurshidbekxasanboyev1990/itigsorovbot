@@ -326,6 +326,18 @@ class Database:
                 'total_staff': total_staff
             }
     
+    async def clear_all_surveys(self) -> int:
+        """Barcha so'rovnoma javoblarini o'chirish"""
+        try:
+            async with self.get_cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) as count FROM survey_responses")
+                count = cursor.fetchone()['count']
+                cursor.execute("DELETE FROM survey_responses")
+                return count
+        except Exception as e:
+            print(f"Error clearing surveys: {e}")
+            return 0
+    
     async def add_student(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Talaba qo'shish yoki yangilash"""
         try:

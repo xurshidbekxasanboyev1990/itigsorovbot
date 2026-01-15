@@ -120,6 +120,7 @@ TEXTS = {
     'add_staff': "➕ Xodim qo'shish",
     'remove_staff': "➖ Xodim o'chirish",
     'send_announcement': "📢 E'lon yuborish",
+    'clear_surveys': "🗑 So'rovnomalarni tozalash",
     'access_denied': "🚫 Sizda bu bo'limga kirish huquqi yo'q.",
 }
 
@@ -286,6 +287,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=TEXTS['add_staff'], callback_data="admin_add_staff")],
         [InlineKeyboardButton(text=TEXTS['remove_staff'], callback_data="admin_remove_staff")],
         [InlineKeyboardButton(text=TEXTS['send_announcement'], callback_data="admin_announce")],
+        [InlineKeyboardButton(text=TEXTS['clear_surveys'], callback_data="admin_clear_surveys")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -1252,6 +1254,63 @@ async def admin_stats(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
     except Exception as e:
         logger.error(f"Error in admin_stats: {e}")
+
+
+# So'rovnomalarni tozalash
+@router.callback_query(F.data == "admin_clear_surveys")
+async def admin_clear_surveys(callback: CallbackQuery, state: FSMContext):
+    """So'rovnomalarni tozalash - tasdiqlash so'rash"""
+    try:
+        if not await is_super_admin(callback.from_user.id):
+            await callback.answer("Faqat admin uchun", show_alert=True)
+            return
+        
+        stats = await db.get_statistics()
+        count = stats['completed_surveys']
+        
+        if count == 0:
+            await callback.answer("So'rovnomalar mavjud emas", show_alert=True)
+            return
+        
+        confirm_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Ha, o'chirish", callback_data="confirm_clear_yes"),
+                InlineKeyboardButton(text="❌ Yo'q", callback_data="confirm_clear_no")
+            ]
+        ])
+        
+        await callback.message.edit_text(
+            f"⚠️ DIQQAT!\n\n{count} ta so'rovnoma o'chiriladi.\n\nDavom etasizmi?",
+            reply_markup=confirm_keyboard
+        )
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Error in admin_clear_surveys: {e}")
+
+
+@router.callback_query(F.data == "confirm_clear_yes")
+async def confirm_clear_yes(callback: CallbackQuery, state: FSMContext):
+    """So'rovnomalarni o'chirishni tasdiqlash"""
+    try:
+        if not await is_super_admin(callback.from_user.id):
+            await callback.answer("Ruxsat yo'q", show_alert=True)
+            return
+        
+        count = await db.clear_all_surveys()
+        await callback.message.edit_text(f"✅ {count} ta so'rovnoma o'chirildi!")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Error in confirm_clear_yes: {e}")
+
+
+@router.callback_query(F.data == "confirm_clear_no")
+async def confirm_clear_no(callback: CallbackQuery, state: FSMContext):
+    """O'chirishni bekor qilish"""
+    try:
+        await callback.message.edit_text("❌ O'chirish bekor qilindi.")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Error in confirm_clear_no: {e}")
 
 
 # Xodim qo'shish
